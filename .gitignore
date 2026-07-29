@@ -1,0 +1,52 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- Virtual environments ----
+venv312/
+venv/
+.venv/
+env/
+
+# ---- Datasets & large binaries ----
+# data.zip needs its own rule: the `data/` pattern above matches only the directory.
+# It is 6.3 GB and GitHub hard-blocks any single file over 100 MB.
+data/
+data.zip
+*.zip
+*.parquet
+*.safetensors
+*.ckpt
+*.pth
+
+# ---- Generated / regenerable artifacts ----
+# results/ is rebuilt by detect.py; threshold.json by the calibration scripts.
+# Note: if a real test suite is ever added, put it in tests/ (plural) — test/ here
+# holds only sample images and is excluded.
+results/
+test/
+models/threshold.json
+
+# ---- Local working files: personal photos, reference paper ----
+me.jpg
+me.png
+trump.png
+*.pdf
+
+# ---- Secrets / local config ----
+.env
+.env.*
+*.token
+.hf_token
+.claude/settings.local.json
+
+# ---- OS & editor cruft ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
