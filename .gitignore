@@ -21,6 +21,28 @@ data.zip
 *.safetensors
 *.ckpt
 *.pth
+*.pt
+*.model
+
+# ---- Video module: model files fetched from Google Drive ----
+# The UNet (*.pt, 2.1 GB) is already covered above; these are not. The tree dump
+# is regenerable from the .joblib via Video/tools/export_tree_dump.py, and all of
+# it is re-downloadable with rclone (see Video/README.md), so none belongs in git.
+Video/nsgvd_local/models/*.joblib
+Video/nsgvd_local/models/*.npz
+Video/nsgvd_local/models/*.sha256
+Video/nsgvd_local/models/download.log
+Video/nsgvd_local/work/
+Video/models/*.npz
+
+# ---- Video clips kept local, not pushed: personal footage at the root of Video/ and the speech test clips ----
+Video/*.mp4
+Speech/test_clips/*.mp4
+
+# ---- Secrets: rclone / Drive credentials (never commit) ----
+rclone.conf
+client_secrets.json
+credentials.json
 
 # ---- Generated / regenerable artifacts ----
 # results/ is rebuilt by detect.py; threshold.json by the calibration scripts.
@@ -50,3 +72,8 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+Video/Test_Videos/
+
+# ---- AIGVDET module: model export fetched from Google Drive, scratch ----
+AIGVDET/models/
+AIGVDET/work/
