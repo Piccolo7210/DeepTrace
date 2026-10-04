@@ -1,0 +1,7 @@
+# torch: install separately ->  pip install torch --index-url https://download.pytorch.org/whl/cpu
+numpy>=2.0,<2.3
+scikit-learn==1.6.1
+pandas>=2.0
+joblib>=1.3
+opencv-python>=4.8
+pillow>=10
