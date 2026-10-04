@@ -1,0 +1,25 @@
+# Extra dependencies for the pretrained-SyncNet pipeline (syncnet_wrapper.py,
+# detect_pretrained.py, vendor/syncnet_python/) -- the actually-deployed detector
+# behind the app's "Speech Forensics" screen. Kept separate from requirements-av.txt,
+# which is specific to the old/unused mediapipe-based preprocess.py path.
+#
+# opencv-python is shared with requirements-av.txt (already listed there, not
+# repeated here). torch/scipy/numpy/tqdm are already satisfied by the root
+# requirements.txt.
+#
+# Install into the existing venv:
+#   venv312\Scripts\pip install -r Speech\requirements-av.txt -r Speech\requirements-syncnet.txt
+#
+# Also requires the ffmpeg binary on PATH (not a pip package) -- both
+# vendor/syncnet_python/run_pipeline.py and SyncNetInstance.evaluate() shell out to
+# it directly.
+#
+# Known harmless pip-resolver warning: scenedetect hard-pins click<8.3.0,~=8.0,
+# which conflicts with huggingface-hub's declared click<9.0.0,>=8.4.2. In practice
+# huggingface_hub only needs that for its own (unused here) CLI entry point -- the
+# library import path this project actually uses (diffusers/from_pretrained) works
+# fine under click 8.2.1. If you see this warning after installing, it's expected;
+# don't "fix" it by bumping click, or scenedetect's own import breaks instead.
+
+scenedetect==0.6.7.1
+python_speech_features==0.6

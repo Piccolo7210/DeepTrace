@@ -1,0 +1,17 @@
+# Extra dependencies for the audio-visual anomaly detection module (Speech/), on top
+# of whatever's already in the repo's main requirements.txt (torch/numpy/scipy/tqdm
+# are shared and cover everything else, including audio I/O and mel-spectrograms —
+# see datasets.py/models/sync_model.py for why no torchaudio/soundfile is needed).
+#
+# Only preprocess.py needs these, for face detection/cropping. train_sync.py,
+# extract_features.py, train_ar.py, calibrate.py, detect.py, and smoke_test.py need
+# nothing beyond the main requirements.txt, so they run unmodified on Kaggle too.
+#
+# Install into the existing venv:
+#   venv312\Scripts\pip install -r Speech\requirements-av.txt
+#
+# Also requires the ffmpeg binary on PATH (not a pip package) for demuxing GRID's
+# .mpg files into frames + audio — see Speech/README.md.
+
+opencv-python==4.10.0.84
+mediapipe==0.10.14
