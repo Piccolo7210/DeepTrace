@@ -1,8 +1,5 @@
 import torch
 
-# config sets HF_HOME before diffusers/huggingface_hub is imported anywhere in the
-# process — huggingface_hub resolves its cache path at import time, so config must
-# be imported first or the HF_HOME override is silently ignored.
 from config import AE_CONFIGS, DEVICE
 from diffusers import AutoencoderKL, VQModel
 

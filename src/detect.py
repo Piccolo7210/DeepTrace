@@ -1,14 +1,3 @@
-"""
-AEROBLADE-style single-image detector.
-
-For an input image, reconstructs it through each candidate LDM autoencoder,
-computes the LPIPS2 reconstruction error for each, takes the minimum
-(Delta_Min, per Eq. 2 of the paper) as the detection score, and localizes that
-error using whichever AE gave the best reconstruction: the un-averaged LPIPS2
-error map is alpha-blended straight onto the input, and averaged within SLIC
-superpixels so each region carries a quotable number instead of just a colour.
-"""
-
 import argparse
 import json
 from pathlib import Path
@@ -32,25 +21,17 @@ from config import (
 from distance import reconstruction_error, reconstruction_heatmap
 from reconstruct import load_image_tensor, reconstruct, tensor_to_pil
 
-# Rough heuristic cutoff (LPIPS2, Delta_Min) used only until models/threshold.json
-# exists. Based on the separation shown in Fig. 3 of the paper (generated images
-# cluster near 0, real images spread out with mass above ~0.01). Run
-# src/calibrate.py to replace this with a properly calibrated value.
 DEFAULT_THRESHOLD = 0.01
 
 # --- Error-localization / visualization settings -------------------------------
 HEATMAP_CMAP = "inferno"
-OVERLAY_ALPHA = 0.55       # blend weight of the error wash over the input
-# The error map is long-tailed: a couple of extreme pixels would compress every
-# other value into the dark end of the colormap. Saturating the wash at a high
-# percentile keeps the mid-range readable; the colorbar is marked extend="max"
-# so the clipping is visible rather than implied.
+OVERLAY_ALPHA = 0.55
 OVERLAY_PERCENTILE = 99
 SLIC_N_SEGMENTS = 160      # SLIC target region count (actual count varies slightly)
 SLIC_COMPACTNESS = 10.0    # lower = regions follow colour/texture edges more closely
-N_LABELED_REGIONS = 6      # highest-error regions annotated on the figure
+N_LABELED_REGIONS = 6
 LABEL_MIN_DISTANCE = 70    # px between annotated centroids, so labels don't collide
-N_REPORTED_REGIONS = 10    # highest-error regions written into the JSON report
+N_REPORTED_REGIONS = 10
 
 
 def load_threshold():
@@ -61,12 +42,18 @@ def load_threshold():
     return DEFAULT_THRESHOLD, False
 
 
-def detect(image_path, aes=None, threshold=None, save_report=True, calibrated=None):
+def detect(
+    image_path, aes=None, threshold=None, save_report=True, calibrated=None, out_dir=None
+):
     """
     Runs the AEROBLADE detection pipeline on a single image.
 
     Returns a dict with per-AE distances, the Delta_Min score, the
     attributed (winning) AE, the verdict, and paths to any saved artifacts.
+
+    out_dir overrides RESULTS_DIR for where the figure/report get saved (e.g. the
+    desktop app writes each run to its own results/app/<run>/ folder instead of
+    dropping into the shared results/ the CLI uses). Defaults to RESULTS_DIR.
     """
     image_path = Path(image_path)
     if aes is None:
@@ -74,15 +61,8 @@ def detect(image_path, aes=None, threshold=None, save_report=True, calibrated=No
     if threshold is None:
         threshold, calibrated = load_threshold()
     elif calibrated is None:
-        # A caller that passes a threshold but no flag (e.g. main() forwarding the
-        # uncalibrated default) must not have it recorded as calibrated.
         calibrated = Path(THRESHOLD_PATH).exists()
 
-    # The paper (Sec. 7.1) only ever evaluates images whose short side is at
-    # least IMAGE_SIZE, deliberately avoiding resizing. Below that, the Resize
-    # in load_image_tensor becomes an *upscale*, and its interpolation blur
-    # suppresses the fine detail that makes real images hard to reconstruct —
-    # biasing Delta_Min downwards, i.e. towards an "AI-generated" verdict.
     with Image.open(image_path) as probe:
         source_size = probe.size
     low_resolution = min(source_size) < IMAGE_SIZE
@@ -117,8 +97,6 @@ def detect(image_path, aes=None, threshold=None, save_report=True, calibrated=No
         "verdict": "AI-generated (LDM)" if is_generated else "Real",
         "source_size": list(source_size),
         "low_resolution_warning": low_resolution,
-        # Highest-error regions of the winning AE's reconstruction, so a write-up can
-        # cite where the error concentrated instead of describing colours.
         "region_attribution": regions[:N_REPORTED_REGIONS],
     }
 
@@ -130,7 +108,7 @@ def detect(image_path, aes=None, threshold=None, save_report=True, calibrated=No
         )
 
     if save_report:
-        out_dir = Path(RESULTS_DIR)
+        out_dir = Path(out_dir) if out_dir is not None else Path(RESULTS_DIR)
         out_dir.mkdir(parents=True, exist_ok=True)
         stem = image_path.stem
 
@@ -179,8 +157,6 @@ def region_attribution(image_rgb, heatmap, n_segments=SLIC_N_SEGMENTS):
     flat = segments.ravel()
     n_labels = int(segments.max()) + 1
     counts = np.bincount(flat, minlength=n_labels).astype(float)
-    # SLIC can leave a label unused; guard the division rather than filtering first,
-    # so every array below stays indexable by label.
     safe_counts = np.maximum(counts, 1.0)
 
     means = np.bincount(flat, weights=heatmap.ravel(), minlength=n_labels) / safe_counts
@@ -225,8 +201,6 @@ def _spread_out(regions, k, min_distance):
 def _save_analysis_figure(x, x_tilde, heatmap, segments, regions, result, out_path):
     input_rgb = np.asarray(tensor_to_pil(x), dtype=float) / 255.0
 
-    # Blend the error map onto the input so error intensity is read at the pixel it
-    # belongs to — no mental alignment between a separate image and heatmap panel.
     vmax = float(np.percentile(heatmap, OVERLAY_PERCENTILE))
     if vmax <= 0:
         vmax = max(float(heatmap.max()), 1e-6)
@@ -263,8 +237,6 @@ def _save_analysis_figure(x, x_tilde, heatmap, segments, regions, result, out_pa
             ha="center",
             va="center",
         )
-        # Dark stroke keeps the value legible over both the bright and dark ends
-        # of the wash, without needing a background box that hides the image.
         label.set_path_effects(
             [path_effects.withStroke(linewidth=2.4, foreground="black")]
         )
@@ -275,18 +247,7 @@ def _save_analysis_figure(x, x_tilde, heatmap, segments, regions, result, out_pa
     for ax in axes:
         ax.axis("off")
 
-    title = (
-        f"{result['verdict']}  (ΔMin={result['delta_min']:.4f}, "
-        f"threshold={result['threshold']:.4f})"
-    )
-    if result.get("low_resolution_warning"):
-        w, h = result["source_size"]
-        title += f"\nLOW CONFIDENCE: source {w}x{h} upscaled to {IMAGE_SIZE}"
-    # Reserve the top strip for the suptitle explicitly: the overlay panel's title is
-    # two lines tall, and tight_layout alone lets the suptitle sit on top of the
-    # shorter single-line titles next to it.
-    fig.suptitle(title, y=0.98)
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
 

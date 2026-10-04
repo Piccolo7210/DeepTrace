@@ -201,10 +201,6 @@ def main():
                 if submit_next() is None:
                     break
 
-            # Keep draining outstanding futures until none remain, but only submit
-            # replacements while under target. This way every submitted download
-            # (and file it may have already saved to disk) gets logged to the
-            # manifest, instead of being abandoned in-flight once the target is hit.
             while futures:
                 done_fut = next(as_completed(futures))
                 futures.pop(done_fut)

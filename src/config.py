@@ -1,5 +1,9 @@
 import os
+from pathlib import Path
+
 os.environ["HF_HOME"] = r"D:\HF_Models"
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 AE_CONFIGS = {
     "sd1": {
@@ -19,19 +23,14 @@ AE_CONFIGS = {
     },
 }
 
-IMAGE_SIZE = 512          # resize images to this before encoding
+IMAGE_SIZE = 512
 DEVICE = "cpu"
 LPIPS_NET = "vgg"         # matches the paper's main setting
 
-# LPIPS2 is the best-performing single layer per Tab. 1 of the paper. The lpips
-# package's retPerLayer list is 0-based (index 0 = slice1/relu1_2 = the paper's
-# LPIPS1), so the paper's LPIPS2 is index 1. Keeping the index and the display
-# name as separate constants avoids indexing with the label (which computed
-# LPIPS3 by mistake) or labelling with the index.
 LPIPS_LAYER_INDEX = 1     # 0-based index into lpips retPerLayer
 LPIPS_LAYER_NAME = 2      # paper's 1-based name, for labels/metadata only
 
-DATA_DIR = "data"
-RESULTS_DIR = "results"
-MODELS_DIR = "models"
-THRESHOLD_PATH = "models/threshold.json"
+DATA_DIR = _PROJECT_ROOT / "data"
+RESULTS_DIR = _PROJECT_ROOT / "results"
+MODELS_DIR = _PROJECT_ROOT / "models"
+THRESHOLD_PATH = MODELS_DIR / "threshold.json"

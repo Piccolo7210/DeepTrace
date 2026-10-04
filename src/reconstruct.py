@@ -14,7 +14,7 @@ def load_image_tensor(path):
     img = Image.open(path).convert("RGB")
     tensor = _preprocess(img)               # [0, 1]
     tensor = tensor * 2 - 1                  # [-1, 1], what the VAE expects
-    return tensor.unsqueeze(0).to(DEVICE)    # add batch dim
+    return tensor.unsqueeze(0).to(DEVICE)
 
 
 def reconstruct(vae, image_tensor, ae_type="kl"):
@@ -30,8 +30,6 @@ def reconstruct(vae, image_tensor, ae_type="kl"):
             recon = vae.decode(latents / vae.config.scaling_factor).sample
 
         elif ae_type == "vq":
-            # VQModel: encode() returns latents directly, no distribution,
-            # no scaling_factor step. decode() takes those latents straight.
             encoded = vae.encode(image_tensor)
             latents = encoded.latents
             recon = vae.decode(latents).sample

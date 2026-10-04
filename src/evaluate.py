@@ -30,8 +30,6 @@ REAL_SCORES_PATH = "real_scores.csv"
 GEN_SCORES_PATH = "gen_scores.csv"
 TARGET_FPR = 0.05
 
-# Paper Tab. 1 (LPIPS2, "Min" row) and Tab. 3, keyed by the substring that identifies
-# each generator in our data/generated/ folder names.
 PAPER_REFERENCE = {
     "stable-diffusion-v1-1": ("SD1.1", 0.979, 0.981),
     "stable-diffusion-v1-5": ("SD1.5", 0.978, 0.963),
@@ -85,8 +83,6 @@ def evaluate(real_scores, gen_scores, target_fpr=TARGET_FPR):
     y_score = -np.concatenate([real_scores, gen_scores])
     ap = float(average_precision_score(y_true, y_score))
 
-    # threshold below which `target_fpr` of real images fall; matches detect.py's
-    # decision rule (is_generated = delta_min < threshold)
     threshold = float(np.percentile(real_scores, target_fpr * 100))
     tpr = float(np.mean(gen_scores < threshold))
     return ap, tpr, threshold

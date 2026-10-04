@@ -2,10 +2,6 @@ import lpips
 import torch
 from config import DEVICE, LPIPS_NET, LPIPS_LAYER_INDEX, LPIPS_LAYER_NAME
 
-# Load once and reuse — loading LPIPS' VGG16 backbone repeatedly is wasteful.
-# spatial=True keeps the per-layer maps (upsampled to input H, W) instead of
-# spatially averaging them, so a single model serves both the scalar
-# reconstruction error and the pixel-wise heatmap.
 _lpips_model = lpips.LPIPS(net=LPIPS_NET, spatial=True).to(DEVICE)
 _lpips_model.eval()
 
